@@ -29,14 +29,12 @@ In this work we' ll see what has caused the death of honey bees in the United St
 - what are the main causes of bee death 
 
 ```{r}
-colony <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-01-11/colony.csv')
-
-stressor <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-01-11/stressor.csv')
+#colony <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-01-11/colony.csv')
+#stressor <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-01-11/stressor.csv')
 ```
 
 ```{r}
 colony <- readr::read_csv("data/colony.csv")
-
 stressor <- readr::read_csv("data/stressor.csv")
 ```
 
@@ -48,7 +46,6 @@ colony_loss <- colony |>
          #sd = sd(colony_lost, na.rm = T)
          ) |> 
   mutate(yearr = make_date(year))
-
 ```
 
 ```{r}
@@ -75,7 +72,6 @@ colony_loss |>
   theme_minimal() +
   theme(panel.grid.minor.x = element_blank(),
         panel.grid.major.x = element_blank())
-
 ```
 
 
@@ -85,4 +81,3 @@ colony_month <- colony |>
   select(year, months, colony_lost_pct) |> 
   separate(months, into = c("month1", "month2"), sep = "-")
 ```
-
