@@ -28,16 +28,16 @@ In this work we' ll see what has caused the death of honey bees in the United St
 - in which season (summer or winter) did the highest bee losses occur;
 - what are the main causes of bee death 
 
-```{r echo=FALSE}
-#colony <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-01-11/colony.csv')
+```{r}
+colony <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-01-11/colony.csv')
 
-#stressor <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-01-11/stressor.csv')
+stressor <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-01-11/stressor.csv')
 ```
 
 ```{r}
-colony <- readr::read_csv("data-raw/colony.csv")
+colony <- readr::read_csv("data/colony.csv")
 
-stressor <- readr::read_csv("data-raw/stressor.csv")
+stressor <- readr::read_csv("data/stressor.csv")
 ```
 
 ```{r}
