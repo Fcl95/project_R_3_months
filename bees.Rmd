@@ -34,8 +34,8 @@ In this work we' ll see what has caused the death of honey bees in the United St
 ```
 
 ```{r}
-colony <- readr::read_csv("data/colony.csv")
-stressor <- readr::read_csv("data/stressor.csv")
+colony <- readr::read_csv("data-raw/colony.csv")
+stressor <- readr::read_csv("data-raw/stressor.csv")
 ```
 
 ```{r}
