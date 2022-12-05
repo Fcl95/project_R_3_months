@@ -49,9 +49,11 @@ colony_loss <- colony |>
 ```
 
 ```{r}
-my_palette <- list("yellow" = "#eeba19",
-                   "orange" = "#ed8c00",
-                   "orange2" = "#cc5d00")
+my_palette <- list("gray" = "#655e59",
+                   "yellow" = "#eec04b",
+                   "orange" = "#d48c14",
+                   "brown" = "#714925",
+                   "black" = "#43382f")
 ```
 
 
@@ -67,11 +69,12 @@ colony_loss |>
                      limits = c(0, 4e6),
                      labels = label_number(
                        suffix = " M", 
-                       scale = 1e-6)) +
+                       scale = 1e-6),
+                     expand = c(0, 0)) +
   #geom_hline(yintercept = 0) +
   theme_minimal() +
   theme(panel.grid.minor.x = element_blank(),
-        panel.grid.major.x = element_blank())
+        panel.grid.major.x = element_blank()) 
 ```
 
 
@@ -79,5 +82,85 @@ colony_loss |>
 ```{r}
 colony_month <- colony |> 
   select(year, months, colony_lost_pct) |> 
-  separate(months, into = c("month1", "month2"), sep = "-")
+  separate(months, into = c("month1")) |> 
+  mutate(seasons = case_when(
+    month1 == "January" ~ "winter",
+    month1 == "April" ~ "spring",
+    month1 == "July" ~ "summer",
+    month1 == "October" ~ "autumn"
+  )) |> 
+  drop_na() |> 
+  mutate(year = as.character(year)) |> 
+  group_by(year, seasons) |> 
+  summarise(season_loss = round(mean(colony_lost_pct, na.rm = T), 1))
+
+anual_loss <- colony_month |> 
+  group_by(year) |> 
+  summarise(season_loss = sum(season_loss)) |> 
+  mutate(seasons = "anual loss")
+
+bee_lost <- full_join(colony_month, anual_loss) 
+bee_lost$seasons <-  fct_relevel(bee_lost$seasons, "anual loss", after = Inf)
+  
+
 ```
+
+```{r}
+ggplot(bee_lost) +
+   geom_bar(aes(x = as.character(year), 
+                y = season_loss, 
+                fill = seasons),
+           stat = "identity", 
+           position = "dodge",
+           width = .9) +
+  scale_fill_manual(values = c(my_palette$gray, my_palette$yellow, 
+                               my_palette$orange,
+                               my_palette$brown, my_palette$black),
+                    limits = c("autumn", "spring", 
+                               "summer", "winter", 
+                               "anual loss"),
+                    labels = c("Autumn loss", "Spring loss", 
+                               "Summer loss", "Winter loss", 
+                               "Anual loss")) +
+  scale_y_continuous(limits = c(0, 50),
+                     expand = c(0, 0)) +
+  labs(x = " ",
+       y = "Loss (%)") +
+  theme_minimal() +
+  theme(panel.grid.minor.x = element_blank(),
+        panel.grid.major.x = element_blank(),
+        legend.title = element_blank(),
+        legend.position = "top",
+        panel.grid.minor.y = element_blank())
+
+
+
+```
+
+```{r}
+stressor |> 
+  select(year, stressor, stress_pct) |> 
+  group_by(year, stressor) |> 
+  summarise(stres_by_year = round(mean(stress_pct, na.rm =T), 1)) |> 
+  ggplot() +
+  geom_bar(aes(x = as.character(year), 
+                y = stres_by_year, 
+                fill = stressor),
+           stat = "identity", 
+           position = "dodge",
+           width = .9) +
+  scale_fill_manual(values = c("#bdbdbd", my_palette$gray, my_palette$yellow, 
+                               my_palette$orange,
+                               my_palette$brown, my_palette$black)) +
+  scale_y_continuous(limits = c(0, 40),
+                     expand = c(0, 0)) +
+  labs(x = " ",
+       y = "Loss (%)") +
+  theme_minimal() +
+  theme(panel.grid.minor.x = element_blank(),
+        panel.grid.major.x = element_blank(),
+        legend.title = element_blank(),
+        legend.position = "top",
+        panel.grid.minor.y = element_blank())
+```
+
