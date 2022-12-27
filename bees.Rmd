@@ -1,20 +1,46 @@
 ---
-title: "Bees"
+title: "Bees colony loss in the United States"
 author: "Fabricio Albuquerque"
-date: "2022-09-23"
+date: "`r Sys.Date()`"
 output:
   html_document:
+    css: style.css
     code_folding: hide
 ---
 
+
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE,
+                      warning = F,
+                      message = F)
 ```
+
+```{css, echo = F}
+/* Whole document: */
+body{
+  font-family: Helvetica;
+  font-size: 16pt;
+}
+/* Headers */
+h1,h2,h3,h4,h5,h6{
+  font-size: 24pt;
+}
+p.caption {
+  font-size: 12pt;
+}
+```
+
 
 ```{r}
 library(tidyverse)
 library(scales)
 library(lubridate)
+library(ggtext)
+library(systemfonts)
+library(ragg)
+library(geojsonio)
+library(usefunc)
+library(patchwork)
 ```
 
 
@@ -24,21 +50,21 @@ Bees are some of nature's most important pollinating species. In addition to thi
 
 In this work we' ll see what has caused the death of honey bees in the United States. Here, we will explore the following questions:
 
-- Which states have had highest bee colony loss rates; 
-- in which season (summer or winter) did the highest bee losses occur;
-- what are the main causes of bee death 
+- Which season did the highest bee losses occur;
+- what are the main causes of bee death; 
+- and which states have had highest bee colony loss rates.
 
-```{r}
+```{r echo=FALSE}
 #colony <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-01-11/colony.csv')
 #stressor <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-01-11/stressor.csv')
 ```
 
-```{r}
+```{r echo=F}
 colony <- readr::read_csv("data-raw/colony.csv")
 stressor <- readr::read_csv("data-raw/stressor.csv")
 ```
 
-```{r}
+```{r echo=FALSE}
 #colony loss
 colony_loss <- colony |> 
   group_by(year) |> 
@@ -56,16 +82,18 @@ my_palette <- list("gray" = "#655e59",
                    "black" = "#43382f")
 ```
 
+# Results
 
+Large bee colony losses have been recorded between 2015 and 2021. These numbers present a tendency to decrease, with 2021 having the lowest reported losses for entire monitoring period, representing a decrease of more than 2 million colonies lost compared to 2015.
 
-```{r}
+```{r, fig.cap = "Fig.1 - Total bee colonies loss (in millions) annually between 2015-2021 in the United States ", fig.align = 'center'}
 colony_loss |> 
   ggplot(aes(x = yearr, y = colony_lost_ttl)) +
   geom_col(fill = my_palette$yellow) +
   scale_x_date( NULL,
     breaks = scales::breaks_width("1 year"), 
     labels = scales::label_date_short()) +
-  scale_y_continuous("Total colonies lost",
+  scale_y_continuous("Total colonies loss",
                      limits = c(0, 4e6),
                      labels = label_number(
                        suffix = " M", 
@@ -105,7 +133,12 @@ bee_lost$seasons <-  fct_relevel(bee_lost$seasons, "anual loss", after = Inf)
 
 ```
 
-```{r}
+<br>
+
+During winter, the greatest losses of bee colonies were observed for all years, except 2020, when summer was the season that caused the most damage to bees. Annual losses (sum of losses in all seasons) reached almost 50% in several years, and in 2021 the lowest percentages were registered, with over 20% losses.
+
+```{r, fig.cap= "Fig.2 - Percentage of bee colonies loss in different seasons and annually (sum of seasons) from 2015-2021 in the United States. Bars, dark gray - autumn; yellow - spring; orange - summer; brown - winter; black - annual.", fig.align = 'center'}
+
 ggplot(bee_lost) +
    geom_bar(aes(x = as.character(year), 
                 y = season_loss, 
@@ -134,33 +167,115 @@ ggplot(bee_lost) +
         panel.grid.minor.y = element_blank())
 
 
-
 ```
 
-```{r}
-stressor |> 
+<br>
+
+Beekeepers  reported that the parasitic Varroa destructor mite was the main cause of colony loss over the monitoring years, causing losses of more than 30% in some years. Other types of pests/parasites and pesticides were the second and third most important causes of colony loss.
+
+```{r, fig.cap= "Fig.3 - Percentage of main causes of bee deaths between 2015-2021. Bars, light gray - diseases; dark gray - other; brown - pesticides; black - unknown; yellow - Other pests/parasites; orange - Varroa mites.", fig.align = 'center'}
+stress <- stressor |> 
   select(year, stressor, stress_pct) |> 
   group_by(year, stressor) |> 
-  summarise(stres_by_year = round(mean(stress_pct, na.rm =T), 1)) |> 
-  ggplot() +
+  summarise(stres_by_year = round(mean(stress_pct, na.rm =T), 1)) 
+
+stress$stressor <-  fct_relevel(stress$stressor, c("Other pests/parasites", "Varroa mites"), after = Inf)
+  
+  ggplot(data = stress) +
   geom_bar(aes(x = as.character(year), 
                 y = stres_by_year, 
                 fill = stressor),
            stat = "identity", 
            position = "dodge",
            width = .9) +
-  scale_fill_manual(values = c("#bdbdbd", my_palette$gray, my_palette$yellow, 
-                               my_palette$orange,
-                               my_palette$brown, my_palette$black)) +
+  scale_fill_manual(values = c("#bdbdbd", my_palette$gray, 
+                               my_palette$brown, my_palette$black,
+                               my_palette$yellow, my_palette$orange)) +
   scale_y_continuous(limits = c(0, 40),
                      expand = c(0, 0)) +
-  labs(x = " ",
+  labs(title = "<span style = 'color: #d48c14'> Varroa mites</span> are leading cause of bee deaths in the USA",
+       x = " ",
        y = "Loss (%)") +
   theme_minimal() +
-  theme(panel.grid.minor.x = element_blank(),
+  theme(plot.title = element_markdown(),
+        panel.grid.minor.x = element_blank(),
         panel.grid.major.x = element_blank(),
         legend.title = element_blank(),
-        legend.position = "top",
+        legend.position = "bottom",
         panel.grid.minor.y = element_blank())
 ```
 
+
+```{r echo=FALSE}
+# us <- geojson_read("data-raw/us_states_hexgrid.geojson",  what = "sp")
+# 
+# us_map <- fortify(us, region="iso3166_2")
+# 
+# colony_21 <- colony |> 
+#   mutate(id = US_name_to_abb(state)) |> 
+#   filter(year == 2021)
+# 
+# # join data
+# us_map <- us_map %>% 
+#   left_join(colony_21, by = "id")
+# 
+# us_map_text <- us_map %>% 
+#   group_by(id) %>% 
+#   summarise(long = mean(long), 
+#             lat = mean(lat),
+#             colony_lost_pct = mean(colony_lost_pct)) |> 
+#   mutate(percent_display = round(colony_lost_pct/100, 3)) |> 
+#   mutate(percent_display = scales::percent(percent_display))
+# 
+# 
+# # plot map
+# ggplot(data = us_map,
+#        mapping = aes(map_id = id,
+#                      x = long,
+#                      y = lat, 
+#                      fill = colony_lost_pct)) +
+#   geom_map(map = us_map,
+#            colour = my_palette$gray,
+#            linewidth = 0.6) +
+#   geom_text(data = us_map_text,
+#             aes(label = id)) +
+#   geom_text(data = us_map_text,
+#             inherit.aes = T,
+#             aes(label = percent_display),
+#              vjust = 1.9)+
+#   labs(title = "Bee Colony Loss in the USA in 2021") +
+#   #scale_fill_carto_c(name = "", palette = "SunsetDark") +
+#   coord_map() +
+#   theme_void() +
+#   theme(legend.position = "", 
+#         legend.title = element_text(),
+#         plot.title = element_text(hjust = 0.5,
+#                                   margin = margin(t = 10), 
+#                                   size = 20,
+#                                   face = "bold")) +
+#    # scale_fill_gradient2(name = "Loss(%)",
+#    #                      low = my_palette$yellow,
+#    #                      mid = "white",
+#    #                     high = my_palette$orange,
+#    #                     na.value = my_palette$brown)
+#   scale_fill_gradientn(colours = c("#ffffb2", my_palette$yellow, my_palette$orange))
+
+```
+
+<br>
+
+Loss rates vary considerably between states across the country. The lowest rate was observed in North Dakota in 2021 (1%) and the highest in New Mexico in 2017 (28%).
+
+```{r fig.height=20, fig.width=30, warning=FALSE, fig.cap="Fig.4 - Average percentage of bee colony loss among  States from 2015 to 2021. States with missing values are in dark gray.", fig.align = 'center'}
+us <- geojson_read("data-raw/us_states_hexgrid.geojson",  what = "sp")
+
+source("R/bee_func.R")
+
+bee_map_y(2015) + bee_map_y(2016) + bee_map_y(2017) + bee_map_y(2018) + bee_map_y(2019) + bee_map_y(2020) + bee_map_y(2021) +  plot_annotation(
+    title = 'Bee colony loss rates have varied widely among the states.\n Kansas (KS) state had high loss rates throughout historical series, \n New Mexico (NM) also had high losses from 2016 to 2019, \n and Arizona (AZ) and Missouri (MO) had high losses in 2021.',
+    theme = theme(plot.title = element_text(size = 38, vjust = -150, hjust = 0.9))) 
+  
+
+```
+<br>
+<br>
